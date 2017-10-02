@@ -164,7 +164,7 @@ class Mnist_N0(Mnist):
     def loss(self, output, batch_labels):
         with tf.name_scope('loss'):
             batch_loss = tf.nn.softmax_cross_entropy_with_logits(logits=output, labels=batch_labels)
-        return tf.reduce_mean(batch_loss)
+        return tf.squeeze(tf.reduce_mean(batch_loss))
 
     def accuracy(self, output, batch_labels):
         with tf.name_scope('accuracy'):
@@ -175,7 +175,8 @@ class Mnist_N0(Mnist):
 
     def build(self):
         batch_images, batch_labels = self.get_batch('train')
-        output, _ = self.network(batch_images)
+        output, keep_prob = self.network(batch_images)
+        self.drop_out_prob = keep_prob
         self.ops_loss_train = self.loss(output, batch_labels)
         self.ops_acc = self.accuracy(output, batch_labels)
         self.ops_min_step = tf.train.AdamOptimizer(1e-4).minimize(self.ops_loss_train)
