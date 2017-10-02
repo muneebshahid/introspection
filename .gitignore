@@ -96,3 +96,4 @@ ENV/
 
 MNIST-data/
 MNIST-data/*
+log_folder/*
