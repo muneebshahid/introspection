@@ -3,6 +3,13 @@ import tensorflow as tf
 import numpy as np
 import tables
 
+
+def write_to_file(f_name, list_var):
+    with open(f_name, 'a') as log_file:
+        for variable in list_var:
+            log_file.write(str(variable) + ' ')
+        log_file.write('\n')
+
 n0 = networks.Mnist_N0()
 n0.build()
 
@@ -11,6 +18,7 @@ total_iteration = 800000
 
 log_folder = 'log_folder/'
 weights_history_dump_path = log_folder + 'mnist_train_data.h5'
+weights_dat_file = log_folder + 'weights.dat'
 loss_file_path = log_folder + 'log_loss'
 
 with tf.Session() as sess:
@@ -25,9 +33,9 @@ with tf.Session() as sess:
     weights_run = sess.run(concatenated_weights)
     record_shape = weights_run.shape[1]
 
-    f = tables.open_file(weights_history_dump_path, mode='w')
+    hdf5_file = tables.open_file(weights_history_dump_path, mode='w')
     atom = tables.Float64Atom()
-    file_array = f.create_earray(f.root, 'data', atom, (0, record_shape))
+    file_array = hdf5_file.create_earray(hdf5_file.root, 'data', atom, (0, record_shape))
     file_array.append(weights_run)
 
     print('Starting Training...')
@@ -43,6 +51,7 @@ with tf.Session() as sess:
             with open(loss_file_path, 'a') as loss_file_handle:
                 loss_file_handle.write(str(avg_log_loss) + ' ')
                 loss_file_handle.write('\n')
+            total_loss = 0
 
 
 
