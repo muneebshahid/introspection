@@ -1,8 +1,72 @@
 from abc import ABCMeta
 import tensorflow as tf
+import tables
+
 from tensorflow.contrib.learn.python.learn.datasets import mnist as mnist_dataset
 
-class Network():
+#######
+### Code for Mnist Networks copied from https://github.com/tensorflow/tensorflow/blob/r1.3/tensorflow/examples/tutorials/mnist/mnist_deep.py
+#######
+
+class IntrospectionNetwork():
+
+    inputs, tragets = None, None
+    ops_loss = None
+    global_step = None
+    ops_inc_global_step = None
+    ops_optim_step = None
+    lr = None
+    io_handle = None
+    network_variables = None
+
+    @staticmethod
+    def weight_variable(shape):
+        """weight_variable generates a weight variable of a given shape."""
+        initial = tf.truncated_normal(shape, stddev=0.1)
+        return tf.Variable(initial)
+
+    @staticmethod
+    def bias_variable(shape):
+        """bias_variable generates a bias variable of a given shape."""
+        initial = tf.constant(0.1, shape=shape)
+        return tf.Variable(initial)
+
+    def __init__(self):
+        self.inputs = tf.placeholder(dtype=tf.float32, shape=[4, 20])
+        self.targets = tf.placeholder(dtype=tf.float32, shape=[1, 20])
+
+    def network(self, x):
+        with tf.name_scope('h1'):
+            f1_w = IntrospectionNetwork.weight_variable([40, 4])
+            f1_b = IntrospectionNetwork.bias_variable([40, 1])
+            h1 = tf.nn.relu(tf.matmul(f1_w, x) + f1_b)
+
+        with tf.name_scope('out'):
+            fo_w = IntrospectionNetwork.weight_variable([1, 40])
+            fo_b = IntrospectionNetwork.bias_variable([1, 1])
+            out = tf.matmul(fo_w, h1) + fo_b
+        return out
+
+    def loss(self):
+        outputs = self.network(self.inputs)
+        loss = tf.abs(outputs - self.targets)
+        return tf.squeeze(tf.reduce_mean(loss))
+
+    def save(self, session, path):
+        self.io_handle.save(session, path, self.global_step)
+
+    def build(self):
+        self.ops_loss = self.loss()
+        self.network_variables = tf.trainable_variables()
+        self.io_handle = tf.train.Saver(self.network_variables)
+        self.global_step = tf.Variable(0, trainable=False)
+        boundaries = [8000, 16000, 24000]
+        values = [5e-4, 1e-4, 5e-5]
+        self.lr = tf.train.piecewise_constant(self.global_step, boundaries, values)
+        self.ops_optim_step = tf.train.AdamOptimizer(self.lr).minimize(self.ops_loss)
+        self.ops_inc_global_step = tf.assign_add(self.global_step, 1)
+
+class ProblemNetwork():
     __metaclass__ = ABCMeta
 
     trainig_data = None
@@ -34,7 +98,7 @@ class Network():
     def build(self):
         pass
 
-class Mnist(Network):
+class Mnist(ProblemNetwork):
 
     def __init__(self):
         def get_data(data, mode='train'):
@@ -48,7 +112,6 @@ class Mnist(Network):
         self.training_data['images'], self.training_data['labels'] = get_data(data, 'train')
         self.test_data['images'], self.test_data['labels'] = get_data(data, 'test')
         self.validation_data['images'], self.validation_data['labels'] = get_data(data, 'validation')
-
 
     @staticmethod
     def conv2d(x, W):
@@ -73,8 +136,8 @@ class Mnist(Network):
         initial = tf.constant(0.1, shape=shape)
         return tf.Variable(initial)
 
-class Mnist_N0(Mnist):
 
+class MnistN0(Mnist):
 
     def network(self, x):
         """deepnn builds the graph for a deep net for classifying digits.

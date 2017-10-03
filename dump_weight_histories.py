@@ -10,7 +10,7 @@ def write_to_file(f_name, list_var):
             log_file.write(str(variable) + ' ')
         log_file.write('\n')
 
-n0 = networks.Mnist_N0()
+n0 = networks.MnistN0()
 n0.build()
 
 print_interval = 500
